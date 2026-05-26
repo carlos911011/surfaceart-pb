@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npx prisma *)",
+      "Bash(node *)",
+      "Bash(npx tsx *)",
+      "Bash(openssl rand *)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(curl *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(git --version)",
+      "Bash(npm list *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

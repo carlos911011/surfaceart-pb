@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model QuoteRequest {
+  id            String       @id @default(cuid())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Client info
+  firstName     String
+  lastName      String
+  email         String
+  phone         String?
+  city          String
+  propertyType  String
+
+  // Request details
+  services      String       // JSON array of selected services
+  budget        String?
+  description   String?
+  hearAboutUs   String?
+
+  // Relations
+  photos        QuotePhoto[]
+  statusHistory StatusLog[]
+
+  // Admin fields
+  status        String       @default("NEW")
+  internalNotes String?
+  quotedAmount  Float?
+  visitDate     DateTime?
+
+  // Metadata
+  ipAddress     String?
+  userAgent     String?
+}
+
+model QuotePhoto {
+  id           String       @id @default(cuid())
+  quoteId      String
+  quote        QuoteRequest @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  filename     String
+  originalName String
+  size         Int
+  mimeType     String
+  url          String
+  createdAt    DateTime     @default(now())
+}
+
+model StatusLog {
+  id         String       @id @default(cuid())
+  quoteId    String
+  quote      QuoteRequest @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  fromStatus String?
+  toStatus   String
+  changedAt  DateTime     @default(now())
+  note       String?
+}
+
+model GalleryItem {
+  id          String   @id @default(cuid())
+  title       String
+  service     String
+  city        String?
+  description String?
+  beforeImage String
+  afterImage  String
+  isPublic    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Testimonial {
+  id         String   @id @default(cuid())
+  clientName String
+  city       String
+  service    String
+  rating     Int      @default(5)
+  text       String
+  isActive   Boolean  @default(true)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}

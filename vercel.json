@@ -1,0 +1,9 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npx prisma generate && next build",
+  "functions": {
+    "src/app/api/quotes/submit/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}
