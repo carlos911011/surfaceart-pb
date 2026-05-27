@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/public/Navbar";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "SurfaceArt Palm Beach | Interior Vinyl Wraps — No Demolition, No Dust",
   description:
