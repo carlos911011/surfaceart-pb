@@ -3,9 +3,19 @@ import path from "path";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 
-// libsql requires absolute file URLs
-const dbPath = path.resolve(process.cwd(), "dev.db");
-const adapter = new PrismaLibSql({ url: `file:${dbPath}` });
+// Support both local SQLite and Turso (cloud)
+function resolveDbUrl(): string {
+  const rawUrl = process.env.DATABASE_URL ?? "file:./dev.db";
+  if (rawUrl.startsWith("file:") && !rawUrl.startsWith("file:/")) {
+    const relativePath = rawUrl.slice("file:".length);
+    return `file:${path.resolve(process.cwd(), relativePath)}`;
+  }
+  return rawUrl;
+}
+
+const config: { url: string; authToken?: string } = { url: resolveDbUrl() };
+if (process.env.TURSO_AUTH_TOKEN) config.authToken = process.env.TURSO_AUTH_TOKEN;
+const adapter = new PrismaLibSql(config);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {

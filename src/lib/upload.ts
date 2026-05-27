@@ -145,6 +145,51 @@ export async function uploadGalleryImage(file: File): Promise<string> {
   return `/uploads/gallery/${filename}`;
 }
 
+export async function uploadTestimonialImage(file: File): Promise<string> {
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`File "${file.name}" exceeds the 10 MB limit`);
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  const detectedMime = detectMimeFromBuffer(buffer);
+  if (!detectedMime || !ALLOWED_MIME_TYPES.has(detectedMime)) {
+    throw new Error(`File "${file.name}" is not a valid image`);
+  }
+
+  const ext = detectedMime === "image/jpeg" ? "jpg"
+    : detectedMime === "image/png" ? "png"
+    : detectedMime === "image/webp" ? "webp"
+    : "heic";
+  const uuid = crypto.randomUUID();
+  const filename = `testimonial-${uuid}.${ext}`;
+
+  const MAX_AVATAR_WIDTH = 400;
+  let finalBuffer: Buffer = buffer;
+  try {
+    const image = sharp(buffer);
+    const metadata = await image.metadata();
+    if (metadata.width && metadata.width > MAX_AVATAR_WIDTH) {
+      const resized = await image
+        .resize({ width: MAX_AVATAR_WIDTH, withoutEnlargement: true })
+        .toBuffer();
+      finalBuffer = Buffer.from(resized);
+    }
+  } catch {
+    finalBuffer = buffer;
+  }
+
+  if (process.env.CLOUDINARY_CLOUD_NAME) {
+    return uploadToCloudinary(finalBuffer, filename, "surfaceart/testimonials");
+  }
+
+  const uploadDir = path.join(process.cwd(), "public", "uploads", "testimonials");
+  await fs.mkdir(uploadDir, { recursive: true });
+  await fs.writeFile(path.join(uploadDir, filename), finalBuffer);
+  return `/uploads/testimonials/${filename}`;
+}
+
 export async function deleteQuotePhotos(quoteId: string): Promise<void> {
   if (!process.env.CLOUDINARY_CLOUD_NAME) {
     const uploadDir = path.join(process.cwd(), "public", "uploads", quoteId);

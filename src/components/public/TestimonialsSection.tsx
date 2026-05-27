@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 interface Testimonial {
   id: string;
@@ -9,6 +10,7 @@ interface Testimonial {
   service: string;
   rating: number;
   text: string;
+  imageUrl?: string | null;
 }
 
 const FALLBACK: Testimonial[] = [
@@ -56,6 +58,35 @@ function Stars({ count }: { count: number }) {
   );
 }
 
+function ClientAvatar({ testimonial }: { testimonial: Testimonial }) {
+  const initials = testimonial.clientName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  if (testimonial.imageUrl) {
+    return (
+      <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-carbon/10">
+        <Image
+          src={testimonial.imageUrl}
+          alt={testimonial.clientName}
+          fill
+          className="object-cover"
+          sizes="40px"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-10 h-10 rounded-full bg-carbon flex items-center justify-center flex-shrink-0">
+      <span className="text-gold text-sm font-semibold font-serif">{initials}</span>
+    </div>
+  );
+}
+
 export default function TestimonialsSection() {
   const [items, setItems] = useState<Testimonial[]>([]);
 
@@ -87,41 +118,29 @@ export default function TestimonialsSection() {
 
         {/* Cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {display.map((t) => {
-            const initials = t.clientName
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase();
-
-            return (
-              <div
-                key={t.id}
-                className="bg-white rounded-2xl p-6 shadow-sm border border-carbon/8 flex flex-col"
-              >
-                {/* Top row */}
-                <div className="flex items-start gap-3 mb-4">
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full bg-carbon flex items-center justify-center flex-shrink-0">
-                    <span className="text-gold text-sm font-semibold font-serif">{initials}</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-carbon text-sm">{t.clientName}</p>
-                    <p className="text-carbon/50 text-xs">{t.city} · {t.service}</p>
-                  </div>
+          {display.map((t) => (
+            <div
+              key={t.id}
+              className="bg-white rounded-2xl p-6 shadow-sm border border-carbon/8 flex flex-col"
+            >
+              {/* Top row */}
+              <div className="flex items-start gap-3 mb-4">
+                <ClientAvatar testimonial={t} />
+                <div>
+                  <p className="font-semibold text-carbon text-sm">{t.clientName}</p>
+                  <p className="text-carbon/50 text-xs">{t.city} · {t.service}</p>
                 </div>
-
-                {/* Stars */}
-                <Stars count={t.rating} />
-
-                {/* Text */}
-                <p className="text-carbon/70 text-sm leading-relaxed mt-4 flex-1">
-                  &ldquo;{t.text}&rdquo;
-                </p>
               </div>
-            );
-          })}
+
+              {/* Stars */}
+              <Stars count={t.rating} />
+
+              {/* Text */}
+              <p className="text-carbon/70 text-sm leading-relaxed mt-4 flex-1">
+                &ldquo;{t.text}&rdquo;
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </section>

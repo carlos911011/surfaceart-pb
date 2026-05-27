@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 interface Review {
   id: string;
@@ -11,6 +12,8 @@ interface Review {
   service: string;
   isActive: boolean;
   order: number;
+  imageUrl: string | null;
+  quoteId: string | null;
   createdAt: string;
 }
 
@@ -23,6 +26,23 @@ function Stars({ rating }: { rating: number }) {
         </svg>
       ))}
     </span>
+  );
+}
+
+function Avatar({ review }: { review: Review }) {
+  if (review.imageUrl) {
+    return (
+      <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-carbon/10">
+        <Image src={review.imageUrl} alt={review.clientName} fill className="object-cover" />
+      </div>
+    );
+  }
+  const initials = review.clientName
+    .split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  return (
+    <div className="w-10 h-10 rounded-full bg-carbon/8 flex items-center justify-center flex-shrink-0">
+      <span className="text-carbon/50 text-xs font-semibold">{initials}</span>
+    </div>
   );
 }
 
@@ -79,10 +99,20 @@ export default function ReviewsAdminPage() {
 
   const inputClass = "w-full px-3 py-2 border border-carbon/20 rounded-lg text-sm text-carbon focus:outline-none focus:border-gold transition-colors";
 
+  const pending = reviews.filter((r) => !r.isActive && r.quoteId);
+  const rest = reviews.filter((r) => r.isActive || !r.quoteId);
+
   return (
     <div className="p-6 sm:p-8">
       <div className="flex items-center justify-between mb-6">
-        <p className="text-carbon/50 text-sm">{reviews.length} reviews</p>
+        <div className="flex items-center gap-3">
+          <p className="text-carbon/50 text-sm">{reviews.length} reviews</p>
+          {pending.length > 0 && (
+            <span className="text-xs px-2 py-0.5 bg-gold/15 text-gold font-semibold rounded-full">
+              {pending.length} pending approval
+            </span>
+          )}
+        </div>
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 px-4 py-2 bg-gold hover:bg-gold-light text-carbon text-sm font-semibold rounded-lg transition-colors"
@@ -148,42 +178,95 @@ export default function ReviewsAdminPage() {
         <div className="text-center py-16 text-carbon/40">No reviews yet.</div>
       ) : (
         <div className="space-y-3">
-          {reviews.map((r) => (
-            <div key={r.id} className={["bg-white rounded-2xl border border-carbon/8 p-5", !r.isActive ? "opacity-60" : ""].join(" ")}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Stars rating={r.rating} />
-                    {!r.isActive && <span className="text-[10px] px-1.5 py-0.5 bg-carbon/10 text-carbon/40 rounded">Hidden</span>}
-                  </div>
-                  <p className="text-carbon/80 text-sm leading-relaxed mb-2">&ldquo;{r.text}&rdquo;</p>
-                  <p className="text-xs text-carbon/50 font-medium">
-                    {r.clientName}
-                    <span className="font-normal text-carbon/30"> · {r.city}</span>
-                    <span className="font-normal text-carbon/30"> · {r.service}</span>
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => toggleActive(r)}
-                    disabled={togglingId === r.id}
-                    className="text-xs text-carbon/50 hover:text-carbon transition-colors disabled:opacity-50"
-                  >
-                    {r.isActive ? "Hide" : "Publish"}
-                  </button>
-                  <button
-                    onClick={() => deleteReview(r.id)}
-                    disabled={deletingId === r.id}
-                    className="text-xs text-red-400 hover:text-red-600 transition-colors disabled:opacity-50"
-                  >
-                    {deletingId === r.id ? "…" : "Delete"}
-                  </button>
-                </div>
-              </div>
-            </div>
+          {/* Pending client reviews first */}
+          {pending.map((r) => (
+            <ReviewCard
+              key={r.id}
+              r={r}
+              togglingId={togglingId}
+              deletingId={deletingId}
+              onToggle={toggleActive}
+              onDelete={deleteReview}
+              highlight
+            />
+          ))}
+          {rest.map((r) => (
+            <ReviewCard
+              key={r.id}
+              r={r}
+              togglingId={togglingId}
+              deletingId={deletingId}
+              onToggle={toggleActive}
+              onDelete={deleteReview}
+            />
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function ReviewCard({
+  r,
+  togglingId,
+  deletingId,
+  onToggle,
+  onDelete,
+  highlight,
+}: {
+  r: Review;
+  togglingId: string | null;
+  deletingId: string | null;
+  onToggle: (r: Review) => void;
+  onDelete: (id: string) => void;
+  highlight?: boolean;
+}) {
+  return (
+    <div className={[
+      "bg-white rounded-2xl border p-5",
+      highlight ? "border-gold/30 ring-1 ring-gold/20" : "border-carbon/8",
+      !r.isActive ? "opacity-70" : "",
+    ].join(" ")}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <Avatar review={r} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <Stars rating={r.rating} />
+              {r.quoteId && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-500 rounded font-medium">
+                  from client link
+                </span>
+              )}
+              {!r.isActive && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-carbon/10 text-carbon/40 rounded">Hidden</span>
+              )}
+            </div>
+            <p className="text-carbon/80 text-sm leading-relaxed mb-2">&ldquo;{r.text}&rdquo;</p>
+            <p className="text-xs text-carbon/50 font-medium">
+              {r.clientName}
+              <span className="font-normal text-carbon/30"> · {r.city}</span>
+              <span className="font-normal text-carbon/30"> · {r.service}</span>
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => onToggle(r)}
+            disabled={togglingId === r.id}
+            className="text-xs text-carbon/50 hover:text-carbon transition-colors disabled:opacity-50"
+          >
+            {r.isActive ? "Hide" : "Publish"}
+          </button>
+          <button
+            onClick={() => onDelete(r.id)}
+            disabled={deletingId === r.id}
+            className="text-xs text-red-400 hover:text-red-600 transition-colors disabled:opacity-50"
+          >
+            {deletingId === r.id ? "…" : "Delete"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

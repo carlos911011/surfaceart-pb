@@ -39,6 +39,9 @@ model QuoteRequest {
   // Metadata
   ipAddress     String?
   userAgent     String?
+
+  // Review request
+  reviewToken   String?  @unique
 }
 
 model QuotePhoto {
@@ -83,7 +86,9 @@ model Testimonial {
   service    String
   rating     Int      @default(5)
   text       String
-  isActive   Boolean  @default(true)
+  imageUrl   String?
+  quoteId    String?  @unique
+  isActive   Boolean  @default(false)
   order      Int      @default(0)
   createdAt  DateTime @default(now())
 }

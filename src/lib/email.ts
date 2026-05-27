@@ -165,6 +165,70 @@ export async function sendNotificationEmail(quote: QuoteForEmail): Promise<void>
   });
 }
 
+export async function sendReviewRequestEmail({
+  firstName,
+  email,
+  reviewUrl,
+}: {
+  firstName: string;
+  email: string;
+  reviewUrl: string;
+}): Promise<void> {
+  const transport = createTransport();
+  const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME ?? "SurfaceArt Palm Beach";
+  const companyPhone = process.env.NEXT_PUBLIC_COMPANY_PHONE ?? "(561) 000-0000";
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;font-family:'Outfit',Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <h1 style="font-family:Georgia,serif;font-size:28px;color:#1C1C1A;margin:0;">SurfaceArt</h1>
+      <p style="color:#B8965A;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:4px 0 0;">Palm Beach · Est. 2025</p>
+    </div>
+    <div style="background:#FAFAF7;border-radius:16px;padding:32px;border:1px solid rgba(28,28,26,0.08);">
+      <h2 style="font-family:Georgia,serif;font-size:22px;color:#1C1C1A;margin:0 0 8px;">Hi ${firstName}!</h2>
+      <p style="color:#1C1C1A;opacity:0.7;margin:0 0 24px;line-height:1.6;">
+        We hope you're loving your new surface transformation! We'd be honored if you took a moment to share your experience — your feedback helps other homeowners make confident decisions.
+      </p>
+
+      <div style="background:#F5F0E8;border-radius:12px;padding:20px;margin-bottom:28px;text-align:center;">
+        <p style="color:#1C1C1A;opacity:0.7;font-size:13px;margin:0 0 4px;">It only takes 2 minutes</p>
+        <p style="font-family:Georgia,serif;font-size:17px;color:#1C1C1A;font-weight:400;margin:0;">Rate your experience · Share your story · Add a photo</p>
+      </div>
+
+      <div style="text-align:center;margin-bottom:28px;">
+        <a href="${reviewUrl}" style="display:inline-block;background:#B8965A;color:#1C1C1A;font-weight:700;padding:16px 36px;border-radius:12px;text-decoration:none;font-size:16px;letter-spacing:0.3px;">
+          Leave Your Review →
+        </a>
+      </div>
+
+      <p style="color:#1C1C1A;opacity:0.5;font-size:12px;margin:0;text-align:center;">
+        This link is personal and only works once. Questions? Call us at <a href="tel:${companyPhone.replace(/[^+\d]/g, "")}" style="color:#B8965A;">${companyPhone}</a>
+      </p>
+    </div>
+    <div style="text-align:center;margin-top:24px;">
+      <p style="color:#1C1C1A;opacity:0.4;font-size:12px;">© ${new Date().getFullYear()} ${companyName} · Licensed & Insured</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  if (!transport) {
+    console.log(`[DEV] Review request email to ${email}:\n Link: ${reviewUrl}`);
+    return;
+  }
+
+  await transport.sendMail({
+    from: `"${companyName}" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `How did we do, ${firstName}? We'd love your feedback 🌟`,
+    html,
+  });
+}
+
 export async function sendCustomEmail({
   to,
   subject,
