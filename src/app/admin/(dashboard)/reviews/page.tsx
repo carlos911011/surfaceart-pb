@@ -57,9 +57,15 @@ export default function ReviewsAdminPage() {
 
   async function load() {
     setLoading(true);
-    const res = await fetch("/api/admin/reviews");
-    setReviews(await res.json());
-    setLoading(false);
+    try {
+      const res = await fetch("/api/admin/reviews");
+      const data = await res.json();
+      if (Array.isArray(data)) setReviews(data);
+    } catch {
+      // leave reviews as-is on network/parse error
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { load(); }, []);
@@ -99,14 +105,15 @@ export default function ReviewsAdminPage() {
 
   const inputClass = "w-full px-3 py-2 border border-carbon/20 rounded-lg text-sm text-carbon focus:outline-none focus:border-gold transition-colors";
 
-  const pending = reviews.filter((r) => !r.isActive && r.quoteId);
-  const rest = reviews.filter((r) => r.isActive || !r.quoteId);
+  const safeReviews = Array.isArray(reviews) ? reviews : [];
+  const pending = safeReviews.filter((r) => !r.isActive && r.quoteId);
+  const rest = safeReviews.filter((r) => r.isActive || !r.quoteId);
 
   return (
     <div className="p-6 sm:p-8">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <p className="text-carbon/50 text-sm">{reviews.length} reviews</p>
+          <p className="text-carbon/50 text-sm">{safeReviews.length} reviews</p>
           {pending.length > 0 && (
             <span className="text-xs px-2 py-0.5 bg-gold/15 text-gold font-semibold rounded-full">
               {pending.length} pending approval
@@ -174,7 +181,7 @@ export default function ReviewsAdminPage() {
             <div key={i} className="bg-white rounded-2xl border border-carbon/8 p-5 animate-pulse h-28" />
           ))}
         </div>
-      ) : reviews.length === 0 ? (
+      ) : safeReviews.length === 0 ? (
         <div className="text-center py-16 text-carbon/40">No reviews yet.</div>
       ) : (
         <div className="space-y-3">
