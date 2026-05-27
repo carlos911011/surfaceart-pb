@@ -8,8 +8,8 @@ const CreateSchema = z.object({
   service: z.string().min(1).max(100),
   city: z.string().max(100).optional(),
   description: z.string().max(1000).optional(),
-  beforeImage: z.string().url(),
-  afterImage: z.string().url(),
+  beforeImage: z.string().min(1),
+  afterImage: z.string().min(1),
   isPublic: z.boolean().optional(),
   order: z.number().int().optional(),
 });

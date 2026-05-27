@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface GalleryItem {
   id: string;
@@ -12,6 +12,113 @@ interface GalleryItem {
   afterImage: string;
   isPublic: boolean;
   order: number;
+}
+
+function ImageUploadField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [dragging, setDragging] = useState(false);
+
+  async function handleFile(file: File) {
+    setError("");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/gallery/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      onChange(data.url);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
+  }
+
+  return (
+    <div>
+      <label className="block text-xs font-medium text-carbon/50 mb-1">{label} *</label>
+      <div
+        className={[
+          "relative rounded-xl border-2 border-dashed transition-colors cursor-pointer overflow-hidden",
+          dragging ? "border-gold bg-gold/5" : "border-carbon/20 hover:border-gold/50",
+          uploading ? "pointer-events-none" : "",
+        ].join(" ")}
+        style={{ minHeight: "120px" }}
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+      >
+        {value ? (
+          /* Preview */
+          <div className="relative group">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={value} alt={label} className="w-full h-32 object-cover" />
+            <div className="absolute inset-0 bg-carbon/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <span className="text-white text-xs font-medium px-3 py-1.5 bg-carbon/60 rounded-lg">
+                Click to replace
+              </span>
+            </div>
+          </div>
+        ) : (
+          /* Empty state */
+          <div className="flex flex-col items-center justify-center h-28 gap-2 px-4 text-center">
+            {uploading ? (
+              <>
+                <svg className="w-6 h-6 text-gold animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span className="text-xs text-carbon/40">Uploading…</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-8 h-8 text-carbon/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-xs text-carbon/40">Click or drag an image here</span>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Uploading overlay over existing image */}
+        {uploading && value && (
+          <div className="absolute inset-0 bg-carbon/60 flex items-center justify-center">
+            <svg className="w-6 h-6 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
+        )}
+      </div>
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleInputChange} />
+    </div>
+  );
 }
 
 function GalleryForm({
@@ -39,6 +146,8 @@ function GalleryForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    if (!form.beforeImage) { setError("Please upload a Before image"); return; }
+    if (!form.afterImage) { setError("Please upload an After image"); return; }
     setSaving(true);
     try {
       await onSave({
@@ -78,13 +187,17 @@ function GalleryForm({
           <input type="number" className={inputClass} value={form.order} onChange={e => setForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))} />
         </div>
       </div>
-      <div>
-        <label className="block text-xs font-medium text-carbon/50 mb-1">Before Image URL *</label>
-        <input className={inputClass} value={form.beforeImage} onChange={e => setForm(f => ({ ...f, beforeImage: e.target.value }))} required type="url" placeholder="https://…" />
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-carbon/50 mb-1">After Image URL *</label>
-        <input className={inputClass} value={form.afterImage} onChange={e => setForm(f => ({ ...f, afterImage: e.target.value }))} required type="url" placeholder="https://…" />
+      <div className="grid sm:grid-cols-2 gap-4">
+        <ImageUploadField
+          label="Before Image"
+          value={form.beforeImage}
+          onChange={(url) => setForm(f => ({ ...f, beforeImage: url }))}
+        />
+        <ImageUploadField
+          label="After Image"
+          value={form.afterImage}
+          onChange={(url) => setForm(f => ({ ...f, afterImage: url }))}
+        />
       </div>
       <div>
         <label className="block text-xs font-medium text-carbon/50 mb-1">Description</label>
