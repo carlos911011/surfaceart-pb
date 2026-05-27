@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
 interface Review {
@@ -51,6 +51,9 @@ export default function ReviewsAdminPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ clientName: "", city: "", rating: 5, text: "", service: "", isActive: true });
+  const [formImage, setFormImage] = useState<File | null>(null);
+  const [formImagePreview, setFormImagePreview] = useState<string | null>(null);
+  const formFileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -70,17 +73,28 @@ export default function ReviewsAdminPage() {
 
   useEffect(() => { load(); }, []);
 
+  function resetForm() {
+    setForm({ clientName: "", city: "", rating: 5, text: "", service: "", isActive: true });
+    setFormImage(null);
+    setFormImagePreview(null);
+    if (formFileRef.current) formFileRef.current.value = "";
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await fetch("/api/admin/reviews", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    const fd = new FormData();
+    fd.append("clientName", form.clientName);
+    fd.append("city", form.city);
+    fd.append("service", form.service);
+    fd.append("rating", String(form.rating));
+    fd.append("text", form.text);
+    fd.append("isActive", String(form.isActive));
+    if (formImage) fd.append("image", formImage);
+    await fetch("/api/admin/reviews", { method: "POST", body: fd });
     setSaving(false);
     setShowForm(false);
-    setForm({ clientName: "", city: "", rating: 5, text: "", service: "", isActive: true });
+    resetForm();
     load();
   }
 
@@ -161,6 +175,49 @@ export default function ReviewsAdminPage() {
               <label className="block text-xs font-medium text-carbon/50 mb-1">Review Text *</label>
               <textarea className={inputClass} value={form.text} onChange={e => setForm(f => ({ ...f, text: e.target.value }))} required rows={3} maxLength={2000} />
             </div>
+            {/* Photo upload */}
+            <div>
+              <label className="block text-xs font-medium text-carbon/50 mb-2">
+                Client Photo <span className="font-normal text-carbon/30">(optional)</span>
+              </label>
+              {formImagePreview ? (
+                <div className="flex items-center gap-3">
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border border-carbon/15 flex-shrink-0">
+                    <Image src={formImagePreview} alt="Preview" fill className="object-cover" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setFormImage(null); setFormImagePreview(null); if (formFileRef.current) formFileRef.current.value = ""; }}
+                    className="text-xs text-carbon/40 hover:text-red-500 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => formFileRef.current?.click()}
+                  className="flex items-center gap-2 px-3 py-2 border border-dashed border-carbon/20 rounded-lg text-xs text-carbon/40 hover:border-gold/50 hover:text-gold transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                  </svg>
+                  Upload photo
+                </button>
+              )}
+              <input
+                ref={formFileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0] ?? null;
+                  setFormImage(file);
+                  setFormImagePreview(file ? URL.createObjectURL(file) : null);
+                }}
+              />
+            </div>
+
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={form.isActive} onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))} className="w-4 h-4 accent-gold" />
               <span className="text-sm text-carbon">Show on public website</span>
@@ -169,7 +226,7 @@ export default function ReviewsAdminPage() {
               <button type="submit" disabled={saving} className="px-4 py-2 bg-gold text-carbon text-sm font-semibold rounded-lg disabled:opacity-50">
                 {saving ? "Saving…" : "Save Review"}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-carbon/60 hover:text-carbon">Cancel</button>
+              <button type="button" onClick={() => { setShowForm(false); resetForm(); }} className="px-4 py-2 text-sm text-carbon/60 hover:text-carbon">Cancel</button>
             </div>
           </form>
         </div>
