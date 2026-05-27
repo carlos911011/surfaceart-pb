@@ -337,10 +337,16 @@ export default function GalleryAdminPage() {
                 ].join(" ")}>
                   {/* Before/After preview */}
                   <div className="h-36 grid grid-cols-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={item.beforeImage} alt="Before" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={item.afterImage} alt="After" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    <div className="relative overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.beforeImage} alt="Before" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <span className="absolute top-1.5 left-1.5 text-[10px] font-semibold px-1.5 py-0.5 bg-black/50 text-white/80 rounded">Before</span>
+                    </div>
+                    <div className="relative overflow-hidden border-l border-white/20">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.afterImage} alt="After" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <span className="absolute top-1.5 left-1.5 text-[10px] font-semibold px-1.5 py-0.5 bg-gold/80 text-carbon rounded">After</span>
+                    </div>
                   </div>
                   <div className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-1">

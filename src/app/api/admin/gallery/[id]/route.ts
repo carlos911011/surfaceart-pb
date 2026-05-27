@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
@@ -8,8 +9,8 @@ const UpdateSchema = z.object({
   service: z.string().min(1).max(100).optional(),
   city: z.string().max(100).optional(),
   description: z.string().max(1000).optional(),
-  beforeImage: z.string().url().optional(),
-  afterImage: z.string().url().optional(),
+  beforeImage: z.string().min(1).optional(),
+  afterImage: z.string().min(1).optional(),
   isPublic: z.boolean().optional(),
   order: z.number().int().optional(),
 });
@@ -32,6 +33,8 @@ export async function PUT(
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const item = await prisma.galleryItem.update({ where: { id }, data: parsed.data });
+  revalidatePath("/api/gallery");
+  revalidatePath("/");
   return NextResponse.json(item);
 }
 
@@ -47,5 +50,7 @@ export async function DELETE(
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await prisma.galleryItem.delete({ where: { id } });
+  revalidatePath("/api/gallery");
+  revalidatePath("/");
   return NextResponse.json({ success: true });
 }

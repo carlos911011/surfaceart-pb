@@ -75,11 +75,11 @@ function GalleryCard({ item, index }: { item: GalleryItem; index: number }) {
       </div>
 
       {/* Label overlay */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-        <p className="text-warm-white font-medium text-sm">{item.title}</p>
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-10 pb-4 px-4">
+        <p className="text-white font-medium text-sm drop-shadow">{item.title}</p>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-gold text-xs">{item.service}</span>
-          {item.city && <span className="text-white/40 text-xs">· {item.city}</span>}
+          <span className="text-gold text-xs drop-shadow">{item.service}</span>
+          {item.city && <span className="text-white/60 text-xs">· {item.city}</span>}
         </div>
       </div>
 
